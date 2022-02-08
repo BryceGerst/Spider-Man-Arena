@@ -1,4 +1,5 @@
 import pygame, Maps, Colors, random
+from KeyboardController import *
 
 def run(displayInfo):
     screen = displayInfo[0]
@@ -57,12 +58,25 @@ def run(displayInfo):
     mapOn = 1
     
     p1First = random.randint(0, 1)
+    usingControllers = (pygame.joystick.get_count() == 2)
     if p1First == 1:
-        cont1 = pygame.joystick.Joystick(0)
-        cont2 = pygame.joystick.Joystick(1)
+        if usingControllers:
+            cont1 = pygame.joystick.Joystick(0)
+            cont2 = pygame.joystick.Joystick(1)
+        else:
+            cont1 = KeyboardController(pygame.K_q, pygame.K_e, pygame.K_SPACE, pygame.K_a,
+                                        pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_LSHIFT, pygame.K_x)
+            cont2 = KeyboardController(pygame.K_COMMA, pygame.K_PERIOD, pygame.K_SLASH, pygame.K_LEFT,
+                                        pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_RSHIFT, pygame.K_m)
     else:
-        cont1 = pygame.joystick.Joystick(1)
-        cont2 = pygame.joystick.Joystick(0)
+        if usingControllers:
+            cont2 = pygame.joystick.Joystick(0)
+            cont1 = pygame.joystick.Joystick(1)
+        else:
+            cont2 = KeyboardController(pygame.K_q, pygame.K_e, pygame.K_SPACE, pygame.K_a,
+                                        pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_LSHIFT, pygame.K_x)
+            cont1 = KeyboardController(pygame.K_COMMA, pygame.K_PERIOD, pygame.K_SLASH, pygame.K_LEFT,
+                                        pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_RSHIFT, pygame.K_m)
 
     lastFrameToggle = False
     bestOfToggle = True

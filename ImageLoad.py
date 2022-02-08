@@ -9,7 +9,7 @@ def find(fileName): # The fileName parameter should include .png, .jpg, etc.
 # --------------------------
 # Image loading section
 spiderman = find('Spider-Sprite.png')
-tomkilz = find('Tomkilz.png')
+peter = find('Peter.png')
 ironman = find('Ironman.png')
 poggle = find('Poggle.png')
 greengoblin = find('GreenGoblin.png')
@@ -17,6 +17,10 @@ lemon = find('JohnLemon.png')
 nut = find('BabyNut.png')
 chrome = find('Chrome.png')
 flap = find('FlappyBird.png')
+donatello = find('Donatello.png')
+hcpss = find('HCPSS.png')
+washMon = find('WashingtonMonument.png')
+
 
 r2 = find('R2D2.png')
 p1win = find('p1wins.png')

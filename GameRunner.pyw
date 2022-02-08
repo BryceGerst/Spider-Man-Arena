@@ -1,0 +1,2 @@
+import SpiderGUI
+SpiderGUI.main()

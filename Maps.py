@@ -46,7 +46,7 @@ def loadMap5(screenDimensions):
     height = screenDimensions[1]
     background = pygame.image.load('Images/Technical.png')
     background = pygame.transform.scale(background, (width, height))
-    textured = pygame.image.load('Images/TechnicalTextured.png')
+    textured = background#pygame.image.load('Images/TechnicalTextured.png')
     textured = pygame.transform.scale(textured, (width, height))
     
     return background, textured

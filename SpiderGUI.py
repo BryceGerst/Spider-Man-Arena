@@ -1,11 +1,10 @@
-import pygame as pg
 import string, StartUp, Game, pygame
-
+from KeyboardController import *
 
 
 class Button(object):
     def __init__(self, rect, command, **kwargs):
-        self.rect = pg.Rect(rect)
+        self.rect = pygame.Rect(rect)
         self.command = command
         self.clicked = False
         self.hovered = False
@@ -16,21 +15,21 @@ class Button(object):
 
     def process_kwargs(self, kwargs):
         settings = {
-            "color": pg.Color('red'),
+            "color": pygame.Color('red'),
             "text": None,
-            "font": None,  # pg.font.Font(None,16),
+            "font": None,  # pygame.font.Font(None,16),
             "call_on_release": True,
             "hover_color": None,
             "clicked_color": None,
-            "font_color": pg.Color("white"),
+            "font_color": pygame.Color("white"),
             "hover_font_color": None,
             "clicked_font_color": None,
             "click_sound": None,
             "hover_sound": None,
-            'border_color': pg.Color('black'),
-            'border_hover_color': pg.Color('yellow'),
+            'border_color': pygame.Color('black'),
+            'border_hover_color': pygame.Color('yellow'),
             'disabled': False,
-            'disabled_color': pg.Color('grey'),
+            'disabled_color': pygame.Color('grey'),
             'radius': 3,
         }
         for kwarg in kwargs:
@@ -51,9 +50,9 @@ class Button(object):
             self.text = self.font.render(self.text, True, self.font_color)
 
     def get_event(self, event):
-        if event.type == pg.MOUSEBUTTONDOWN and event.button == 1:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             self.on_click(event)
-        elif event.type == pg.MOUSEBUTTONUP and event.button == 1:
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             self.on_release(event)
 
     def on_click(self, event):
@@ -65,12 +64,12 @@ class Button(object):
     def on_release(self, event):
         if self.clicked and self.call_on_release:
             # if user is still within button rect upon mouse release
-            if self.rect.collidepoint(pg.mouse.get_pos()):
+            if self.rect.collidepoint(pygame.mouse.get_pos()):
                 self.command()
         self.clicked = False
 
     def check_hover(self):
-        if self.rect.collidepoint(pg.mouse.get_pos()):
+        if self.rect.collidepoint(pygame.mouse.get_pos()):
             if not self.hovered:
                 self.hovered = True
                 if self.hover_sound:
@@ -111,10 +110,10 @@ class Button(object):
             surface.blit(text, text_rect)
 
     def round_rect(self, surface, rect, color, rad=20, border=0, inside=(0, 0, 0, 0)):
-        rect = pg.Rect(rect)
+        rect = pygame.Rect(rect)
         zeroed_rect = rect.copy()
         zeroed_rect.topleft = 0, 0
-        image = pg.Surface(rect.size).convert_alpha()
+        image = pygame.Surface(rect.size).convert_alpha()
         image.fill((0, 0, 0, 0))
         self._render_region(image, zeroed_rect, color, rad)
         if border:
@@ -125,7 +124,7 @@ class Button(object):
     def _render_region(self, image, rect, color, rad):
         corners = rect.inflate(-2 * rad, -2 * rad)
         for attribute in ("topleft", "topright", "bottomleft", "bottomright"):
-            pg.draw.circle(image, color, getattr(corners, attribute), rad)
+            pygame.draw.circle(image, color, getattr(corners, attribute), rad)
         image.fill(color, rect.inflate(-2 * rad, 0))
         image.fill(color, rect.inflate(0, -2 * rad))
 
@@ -137,45 +136,59 @@ class Button(object):
 
 
 def scaleImage(image, screenW, screenH):
-    oldWidth, oldHeight = pg.Surface.get_size(image)
+    oldWidth, oldHeight = pygame.Surface.get_size(image)
     newWidth = int(oldWidth * (1920 / screenW))
     newHeight = int(oldHeight * (1080 / screenW))
-    newImage = pg.transform.scale(image, (newWidth, newHeight))
+    newImage = pygame.transform.scale(image, (newWidth, newHeight))
     return newImage
 
 def main():
     screenW, screenH, fps = StartUp.giveDisplayInfo()
-    pg.init()
+    pygame.init()
     screen, clock = StartUp.start()
     done = False
 
     btn_settings = {
         "clicked_font_color": (0, 0, 0),
         "hover_font_color": (0, 0, 0),
-        'font': pg.font.Font(None, 48),
+        'font': pygame.font.Font(None, 48),
         'font_color': (255, 255, 255),
         'border_color': (0, 0, 0),
     }
 
 
     btn = Button(rect=((screenW // 2) - 200, (screenH * .37) - 40, 400, 80), command=lambda: Game.main(screen, screenW, screenH, fps, clock), text='Enter the ARENA', **btn_settings)
-    textLogo = scaleImage(pg.image.load('Images/TextLogo.png'), screenW, screenH)
-    logo = scaleImage(pg.image.load('Images/Logo.png'), screenW, screenH)
-    controller = pygame.joystick.Joystick(0)
-    controller2 = pygame.joystick.Joystick(1)
-    controller.init()
-    controller2.init()
+    textLogo = scaleImage(pygame.image.load('Images/TextLogo.png'), screenW, screenH)
+    logo = scaleImage(pygame.image.load('Images/Logo.png'), screenW, screenH)
+    usingControllers = (pygame.joystick.get_count() == 2)
+    if usingControllers:
+        controller = pygame.joystick.Joystick(0)
+        controller2 = pygame.joystick.Joystick(1)
+        controller.init()
+        controller2.init()
+    else:
+        controller = KeyboardController(pygame.K_q, pygame.K_e, pygame.K_SPACE, pygame.K_a,
+                                        pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_LSHIFT, pygame.K_x)
+        controller2 = KeyboardController(pygame.K_COMMA, pygame.K_PERIOD, pygame.K_SLASH, pygame.K_LEFT,
+                                        pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_RSHIFT, pygame.K_m)
+    
     while not done:
-        for event in pg.event.get():
-            if event.type == pg.QUIT or pg.key.get_pressed()[27]:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or pygame.key.get_pressed()[27]:
                 done = True
             btn.get_event(event)
-        if controller.get_button(0) or controller2.get_button(0):
-            btn.command()
+
+        if usingControllers:
+            if controller.get_button(0) or controller2.get_button(0):
+                btn.command()
+        else:
+            if any(pygame.key.get_pressed()):
+                btn.command()
+                
         btn.draw(screen)
         screen.blit(textLogo, ((screenW // 2) - (textLogo.get_width() // 2), 0))
         screen.blit(logo, ((screenW // 2) - (logo.get_width() // 2), (screenH * 1/2)))
-        pg.display.update()
-    pg.quit()
+        pygame.display.update()
+    pygame.quit()
 
 main()

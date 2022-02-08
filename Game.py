@@ -45,7 +45,7 @@ def main(screen, screenW, screenH, fps, clock):
           if gameStage == -1: # gameStage will only be -1 if the player tries to quit out of the game during a run() method
                playing = False
 
-          if victoryFrames >= 60:
+          if victoryFrames >= 1200:
                gameStage = 0
                victoryFrames = 0
 

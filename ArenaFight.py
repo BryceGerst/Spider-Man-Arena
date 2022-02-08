@@ -1,11 +1,15 @@
 # This file handles the primary gameplay
-
 import pygame, Colors, Maps, Scaler, math, random
+from KeyboardController import *
 
 pygame.mixer.init()
 noiseChannel = pygame.mixer.Channel(2)
 p1ShootChannel = pygame.mixer.Channel(3)
 p2ShootChannel = pygame.mixer.Channel(4)
+
+dashSound = pygame.mixer.Sound('Sound/dash.wav')
+reflectSound = pygame.mixer.Sound('Sound/reflect.wav')
+reflectSound.set_volume(0.7)
 
 def move(pos, direction, distance, hitbox, gameMap):
     posX = pos[0]
@@ -198,10 +202,25 @@ def run(displayInfo, score, char1, char2, mapNum, p1BallColor, p2BallColor, boNu
             doingBanter = False
         pygame.display.update()
         clock.tick(60)
+
+    controllers = []
+    usingControllers = (pygame.joystick.get_count() == 2)
+    if usingControllers:
+        cont1 = pygame.joystick.Joystick(0)
+        cont2 = pygame.joystick.Joystick(1)
+        cont1.init()
+        cont2.init()
+    else:
+        cont1 = KeyboardController(pygame.K_q, pygame.K_e, pygame.K_SPACE, pygame.K_a,
+                                    pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_LSHIFT, pygame.K_x)
+        cont2 = KeyboardController(pygame.K_COMMA, pygame.K_PERIOD, pygame.K_SLASH, pygame.K_LEFT,
+                                    pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_RSHIFT, pygame.K_m)
+    controllers.append(cont1)
+    controllers.append(cont2)
     
     while inGameplay:
-        controllersConnected = pygame.joystick.get_count()
-        if controllersConnected != 2:
+        stillConnected = (pygame.joystick.get_count() == 2)
+        if usingControllers != stillConnected:
             # pause game
             return -1
         else:
@@ -216,26 +235,32 @@ def run(displayInfo, score, char1, char2, mapNum, p1BallColor, p2BallColor, boNu
             except:
                 lastAimPos = [(0, 0), (0, 0)]
             aimStickPos = []
-            triggerValues = []
+            leftTriggerValues = []
+            rightTriggerValues = []
             button1 = []
             downHat = []
-            for i in range(controllersConnected):
-                controller = pygame.joystick.Joystick(i)
-                controller.init()
+            i = 0
+            for controller in controllers:
+                #print('p ' + str(i))
+                #for j in range(5):
+                #    print(controller.get_axis(j))
+                #print('---------------------------')
                 movePos = (controller.get_axis(0), controller.get_axis(1))
                 if math.hypot(movePos[0], movePos[1]) > moveDeadzone:
                     moveStickPos.append(movePos)
                 else:
                     moveStickPos.append((0,0))
                     
-                aimPos = (controller.get_axis(3), controller.get_axis(4)) # 3, 4
+                aimPos = (controller.get_axis(3), controller.get_axis(2)) # 3, 4
                 if math.hypot(aimPos[0], aimPos[1]) > deadzone:
                     aimStickPos.append(aimPos)
                 else:
                     aimStickPos.append(lastAimPos[i])
-                downHat.append(controller.get_hat(0)[1] == -1)
-                triggerValues.append(controller.get_axis(2))
+                downHat.append(False)#controller.get_hat(0)[1] == -1)
+                leftTriggerValues.append(controller.get_axis(4))
+                rightTriggerValues.append(controller.get_axis(5))
                 button1.append(controller.get_button(0))
+                i += 1
 
 
             
@@ -250,7 +275,7 @@ def run(displayInfo, score, char1, char2, mapNum, p1BallColor, p2BallColor, boNu
                         helper1.update(projectiles)
                     else:
                         helper2.update(projectiles)
-                projectile = player.update(button1[i], aimStickPos[i], triggerValues[i], moveStickPos[i], downHat[i], borderInfo)
+                projectile = player.update(button1[i], aimStickPos[i], leftTriggerValues[i], rightTriggerValues[i], moveStickPos[i], downHat[i], borderInfo)
                 #player.drawToScreen(screen)
                 if projectile != 0:
                     if i == 0:
@@ -351,9 +376,11 @@ class Player():
         self.immune = False
         self.dashBonus = 2.5
         # -----------------NORMALLY FALSE---------------
-        self.helpToggle = True
+        self.helpToggle = False
         # ----------------------------------------------
-    def update(self, buttons, aimPos, triggerValue, movePos, downHat, borderInfo):
+        
+    def update(self, buttons, aimPos, leftTriggerValue, rightTriggerValue, movePos, downHat, borderInfo):
+        global dashSound, noiseChannel
         dashBonus = self.dashBonus
         triggerDeadzone = 0.9
         self.dashFrames = max(0, self.dashFrames - 1)
@@ -376,11 +403,12 @@ class Player():
             self.helpToggle = not self.helpToggle
         self.lastDownHat = downHat
 
-        if not self.lastTrigger and triggerValue > triggerDeadzone and self.dashCooldown == 0:
+        if not self.lastTrigger and leftTriggerValue > triggerDeadzone and self.dashCooldown == 0:
             self.dashFrames = 14
             self.dashCooldown = self.maxDash
             self.immune = True
-        self.lastTrigger = triggerValue > triggerDeadzone
+            pygame.mixer.Sound.play(dashSound)
+        self.lastTrigger = leftTriggerValue > triggerDeadzone
 
         if buttons and not self.lastButton:
             self.stance *= -1
@@ -392,7 +420,7 @@ class Player():
         if posX < borderInfo[0] or posX > borderInfo[1] or posY < borderInfo[2] or posY > borderInfo[3]:
             self.dealDamage(1)
             
-        if -1 * triggerValue > triggerDeadzone and self.ammo > 0 and self.shootCooldown == 0:
+        if rightTriggerValue > triggerDeadzone and self.ammo > 0 and self.shootCooldown == 0:
             self.ammo -= 1
             self.shootCooldown = 60
             webBall = Projectile(self.direction, 10, self.pos, self.radius, self.stance, self.ballColor, self.playerNum, self.isZaron)
@@ -454,15 +482,19 @@ class Projectile():
         self.isZaron = isZaron
         self.ownerNum = playerNum
         self.speed = speed
+        
     def changeAngle(self, direction):
         self.xSpeed = self.speed * math.cos(direction)
         self.ySpeed = self.speed * math.sin(direction)
+        
     def fakeUpdate(self, gameMap, players):
         oldInfo = self.immuneFrames, self.xNoBounce, self.yNoBounce, self.pos, self.speed, self.xSpeed, self.ySpeed, self.bouncesLeft, self.immuneFrames, self.color
         value = self.update(gameMap, players)
         self.immuneFrames, self.xNoBounce, self.yNoBounce, self.pos, self.speed, self.xSpeed, self.ySpeed, self.bouncesLeft, self.immuneFrames, self.color = oldInfo
         return value
+    
     def update(self, gameMap, players):
+        global reflectSound
         self.immuneFrames -= 1
         self.xNoBounce -= 1
         self.yNoBounce -= 1
@@ -564,6 +596,7 @@ class Projectile():
                 distance = math.hypot(self.pos[0] - player.pos[0], self.pos[1] - player.pos[1])
                 if distance < self.radius + player.radius:
                     if player.immune:
+                        pygame.mixer.Sound.play(reflectSound)
                         xDisp = player.pos[0] - self.pos[0]
                         yDisp = player.pos[1] - self.pos[1]
                         angle = math.atan2(yDisp, xDisp) + math.pi

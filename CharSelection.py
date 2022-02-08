@@ -1,5 +1,6 @@
 import pygame, Colors
 import Character as c
+from KeyboardController import *
 
 def draw(screen, sprite, pos):
     halfW = sprite.get_width() // 2
@@ -24,7 +25,7 @@ def run(displayInfo):
     midH = screenH // 2
     mapH = midH - (previewHeight // 2)
 
-    orderChars = [c.spidey, c.peter, c.ironman, c.goblin, c.poggle, c.lemon, c.r2, c.babynut, c.chrome, c.bird]
+    orderChars = [c.spidey, c.peter, c.ironman, c.goblin, c.poggle, c.lemon, c.r2, c.babynut, c.chrome, c.bird, c.donatello, c.hcpss, c.washMon]
 
     allCharPreviews = []
     allCharNames = []
@@ -47,8 +48,15 @@ def run(displayInfo):
     p1CharOn = 1
     p2CharOn = 1
 
-    cont1 = pygame.joystick.Joystick(0)
-    cont2 = pygame.joystick.Joystick(1)
+    usingControllers = (pygame.joystick.get_count() == 2)
+    if usingControllers:
+        cont1 = pygame.joystick.Joystick(0)
+        cont2 = pygame.joystick.Joystick(1)
+    else:
+        cont1 = KeyboardController(pygame.K_q, pygame.K_e, pygame.K_SPACE, pygame.K_a,
+                                    pygame.K_d, pygame.K_w, pygame.K_s, pygame.K_LSHIFT, pygame.K_x)
+        cont2 = KeyboardController(pygame.K_COMMA, pygame.K_PERIOD, pygame.K_SLASH, pygame.K_LEFT,
+                                    pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_RSHIFT, pygame.K_m)
 
     lastX = [0, 0]
     mouseWasDown = [True, True]
